@@ -8,3 +8,7 @@
 *.out
 
 *.log
+
+homework1/main.blg
+
+homework1/main.bbl
