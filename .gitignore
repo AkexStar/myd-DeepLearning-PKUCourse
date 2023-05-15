@@ -1,2 +1,10 @@
 
 .DS_Store
+
+*.gz
+
+*.aux
+
+*.out
+
+*.log
