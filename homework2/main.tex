@@ -1,0 +1,77 @@
+\documentclass{homework}
+% \documentclass[UTF8]{ctexart}
+\usepackage[UTF8]{ctex}
+\usepackage{amsmath, amsthm, amssymb, bm, color, framed, graphicx, mathrsfs}
+
+\author{Li-Jintao 2201213292 lijintao@stu.pku.edu.cn}
+\class{Prof. Mu-Yadong's Deep Learning: Algorithms and Applications}
+% \class{Prof. 穆亚东: 深度学习算法与应用}
+\date{June 1st, 2023}
+% \title{\Large \textbf{第一次课程作业\quad Homework-1}}
+\title{\Large \textbf{Homework-1}}
+% \address{Remote Sensing Building 318, Peking University, Beijing}
+\definecolor{shadecolor}{RGB}{241, 241, 255}
+\graphicspath{{./media/}}
+
+\begin{document} \maketitle
+\rule[0ex]{\textwidth}{1.5pt}
+\begin{shaded}
+\question \textbf{Variational Auto-Encoder}
+    
+VAE is the typical generative model which has a lot of applications. The encoder portion of a VAE yields an approximate posterior distribution $q(z \mid x)$, and is parameterized on a neural network by weights collectively denoted $\theta$. Hence we more properly write the encoder as $q_{\theta}(z \mid x)$. Similarly, the decoder portion of the VAE yields a likelihood distribution $p(x \mid z)$, and is parameterized on a neural network by weights collectively denoted $\phi$. Hence we more properly denote the decoder portion of the VAE as $p_{\phi}(x \mid z)$. The output of the encoder are parameters of the latent distribution, which is sampled to yield the input into the decoder.
+
+a) Draw the model's framework of VAE
+
+b) Derive the objective function e.g. the Evidence Lower Bound (ELBO) using KL divergence.
+
+HINT: 1) Please include the re-parametrisation trick implemented in VAE
+
+HINT: 2) You may need to use Bayes theorem: $p(x \mid y)=\frac{p(y \mid x) p(x)}{p(y)}$ 
+
+c) Derive the closed form VAE loss: Gaussian latents, based on question b). e.g. Say we choose:
+$$
+p(z) \rightarrow \frac{1}{\sqrt{2 \pi \sigma_{p}^{2}}} \exp \left(-\frac{\left(x-\mu_{p}\right)^{2}}{2 \sigma_{p}^{2}}\right)
+$$
+
+and
+$$
+q_{\theta}\left(z \mid x_{i}\right) \rightarrow \frac{1}{\sqrt{2 \pi \sigma_{q}^{2}}} \exp \left(-\frac{\left(x-\mu_{q}\right)^{2}}{2 \sigma_{q}^{2}}\right)
+$$
+    
+\end{shaded}
+\textbf{SOLUTION:}
+
+VAE is ...
+
+\begin{shaded}
+\question \textbf{Policy based Reinforcement Learning}
+
+Please write down the detailed derivation of the policy gradient method in the episodic case, e.g. Show that $\nabla J(\boldsymbol{\theta}) \propto \mathbb{E}_{\pi}\left[q_{\pi}(s, a) \nabla \pi(a \mid s)\right]$
+
+Some definitions you may need:
+$$
+J(\boldsymbol{\theta})=v_{\pi_{\theta}}\left(s_{0}\right)
+$$
+
+where $v_{\pi_{\theta}}$ is the true state value function for $\pi_{\theta}$, the policy determined by $\theta$ state value function:
+$$
+v_{\pi}=\mathbb{E}_{\pi}\left[G_{t} \mid S_{t}=s\right]=\sum_{a} \pi(a \mid s) q_{\pi}(s, a)
+$$
+
+state-action value function:
+$$
+q_{\pi}(s, a)=\mathbb{E}_{\pi}\left[G_{t} \mid S_{t}=s, A_{t}=a\right]=\sum_{s^{\prime}, r} p\left(s^{\prime}, r \mid s, a\right)\left(r+v_{\pi}\left(s^{\prime}\right)\right)
+$$
+
+where we have the return defined as:
+$$
+G_{t}=R_{t+1}+R_{t+2}+\ldots
+$$
+
+\end{shaded}
+
+\textbf{SOLUTION:}
+
+\bibliographystyle{plain}
+\bibliography{citations}
+\end{document}
