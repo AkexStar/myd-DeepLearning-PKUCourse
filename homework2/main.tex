@@ -1,6 +1,6 @@
 \documentclass{homework}
 % \documentclass[UTF8]{ctexart}
-\usepackage[UTF8]{ctex}
+% \usepackage[UTF8]{ctex}
 \usepackage{amsmath, amsthm, amssymb, bm, color, framed, graphicx, mathrsfs}
 
 \author{Li-Jintao 2201213292 lijintao@stu.pku.edu.cn}
@@ -41,12 +41,187 @@ $$
 \end{shaded}
 \textbf{SOLUTION:}
 
-VAE is ...
+\textbf{BING AI:}
+
+a) The framework of a VAE consists of an encoder and a decoder. The encoder takes in input data $x$ and outputs the parameters of the latent distribution $q_{\theta}(z \mid x)$. The decoder takes in a sample from the latent distribution $z$ and outputs the reconstructed data $p_{\phi}(x \mid z)$.
+
+b) The objective function of a VAE is the Evidence Lower Bound (ELBO), which can be derived using KL divergence. The ELBO can be written as:
+$$
+\mathcal{L}(\theta, \phi ; x)=\mathbb{E}_{q_{\theta}(z \mid x)}[\log p_{\phi}(x \mid z)]-\operatorname{KL}\left(q_{\theta}(z \mid x) \| p(z)\right)
+$$
+where $\operatorname{KL}$ denotes the Kullback-Leibler divergence. The first term is the expected log-likelihood of the data given the latent variable $z$, and the second term is the KL divergence between the approximate posterior $q_{\theta}(z \mid x)$ and the prior $p(z)$.
+
+The re-parametrization trick is used to make the ELBO differentiable with respect to $\theta$. This is done by introducing an auxiliary variable $\epsilon$ such that $z = g_{\theta}(\epsilon, x)$ where $g_{\theta}$ is a differentiable function. This allows us to write the ELBO as:
+$$
+\mathcal{L}(\theta, \phi ; x)=\mathbb{E}_{p(\epsilon)}[\log p_{\phi}(x \mid g_{\theta}(\epsilon, x))]-\operatorname{KL}\left(q_{\theta}(z \mid x) \| p(z)\right)
+$$
+
+c) If we choose Gaussian distributions for both the prior and approximate posterior, we can derive a closed-form expression for the VAE loss. Let's say we choose:
+$$
+p(z) = \frac{1}{\sqrt{2 \pi \sigma_{p}^{2}}} \exp \left(-\frac{\left(z-\mu_{p}\right)^{2}}{2 \sigma_{p}^{2}}\right)
+$$
+and
+$$
+q_{\theta}\left(z \mid x_{i}\right) = \frac{1}{\sqrt{2 \pi \sigma_{q}^{2}}} \exp \left(-\frac{\left(z-\mu_{q}\right)^{2}}{2 \sigma_{q}^{2}}\right)
+$$
+where $\mu_p$, $\sigma_p$, $\mu_q$, and $\sigma_q$ are learned parameters.
+
+The KL divergence between two Gaussian distributions has a closed-form expression:
+$$
+\operatorname{KL}\left(q_{\theta}(z \mid x) \| p(z)\right) = \log \frac{\sigma_p}{\sigma_q} + \frac{\sigma_q^2 + (\mu_q - \mu_p)^2}{2\sigma_p^2} - \frac{1}{2}
+$$
+
+Substituting this into the ELBO, we get:
+$$
+\mathcal{L}(\theta, \phi ; x)=\mathbb{E}_{p(\epsilon)}[\log p_{\phi}(x \mid g_{<IPAddress>-<IPAddress>})]- \log \frac{\sigma_p}{\sigma_q} - \frac{\sigma_q^2 + (\mu_q - mu_p)^2}{2\sigma_p^2} + \frac{1}{2}
+$$
+
+This is the closed-form expression for the VAE loss when using Gaussian latents.
+
+\textbf{ChatGPT:}
+
+a) The framework of the VAE is as follows: 
+
+$$
+\begin{aligned}
+z & \sim q_{\theta}(z \mid x) \\
+x & \sim p_{\phi}(x \mid z)
+\end{aligned}
+$$
+
+b) The Evidence Lower Bound (ELBO) objective function of VAE is derived as follows: 
+
+$$
+\begin{aligned}
+\log p_{\phi}(x) &\geq \mathbb{E}_{q_{\theta}(z \mid x)} \left[ \log p_{\phi}(x \mid z) \right] - D_{\mathrm{KL}} \left[q_{\theta}(z \mid x) \| p(z) \right] \\
+&= \mathbb{E}_{q_{\theta}(z \mid x)} \left[ \log p_{\phi}(x \mid z) - \log \frac{q_{\theta}(z \mid x)}{p(z)} \right] \\
+&= \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} \left[ \log p_{\phi}(x \mid z=\mu_{\theta}(x) + \sigma_{\theta}(x) \odot \epsilon) - \log \frac{q_{\theta}(z=\mu_{\theta}(x) + \sigma_{\theta}(x) \odot \epsilon \mid x)}{p(z=\epsilon)} \right] \\
+&= \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} \left[ \log p_{\phi}(x \mid z=\mu_{\theta}(x) + \sigma_{\theta}(x) \odot \epsilon) - \log \frac{1}{\sqrt{2\pi}\sigma_p} \exp \left(-\frac{\left(\epsilon - 0\right)^2}{2\sigma_p^2}\right) - \log \frac{1}{\sqrt{2\pi}\sigma_{\theta}(x)} \exp \left(-\frac{\left(\epsilon-\frac{\mu_{\theta}(x)}{\sigma_{\theta}(x)}\right)^2}{2}\right) \right] \\
+&= \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} \left[ \log p_{\phi}(x \mid z=\mu_{\theta}(x) + \sigma_{\theta}(x) \odot \epsilon) - \frac{1}{2} \log(2\pi\sigma_p^2) - \frac{\left(\epsilon^2\right)}{2\sigma_p^2} + \frac{1}{2} \log\left(2\pi\left(\sigma_{\theta}^2(x)\right)\right) + \frac{\left(\epsilon-\frac{\mu_{\theta}(x)}{\sigma_{\theta}(x)}\right)^2}{2\sigma_{\theta}^2(x)} \right] \\
+&= \mathbb{E}_{\epsilon \sim \mathcal{N}(0, I)} \left[ \log p_{\phi}(x \mid z=\mu_{\theta}(x) + \sigma_{\theta}(x) \odot \epsilon) - \frac{1}{2}\left(1+\log(\sigma_{\theta}^2(x))-\mu_{\theta}^2(x)-\sigma_{\theta}^2(x)\right) - \frac{1}{2} \log \left(\frac{\sigma_p^2}{\sigma_{\theta}^2(x)}\right) \right] \\
+\end{aligned}
+$$
+
+c) The closed-form VAE loss with Gaussian latent variables is as follows:
+
+$$
+\mathcal{L}(x, \theta, \phi) = \frac{1}{2}\sum_{j=1}^{J} \left(1+\log(\sigma_{j}^2)-\mu_{j}^2-\sigma_{j}^2\right) - \frac{1}{N}\sum_{i=1}^{N}\sum_{j=1}^{J} \left[ \log p_{\phi}(x_i \mid z_j) - \frac{1}{2}\left(1+\log(\sigma_{q_j}^{2}(x_i))-\mu_{q_j}(x_i)^2-\sigma_{q_j}^{2}(x_i)\right) \right]
+$$
+
+where $N$ is the number of data points, $J$ is the dimension of the latent space, $\mu_{q_j}(x_i), \sigma_{q_j}^{2}(x_i)$ are the parameters of the Gaussian $q_{\theta}(z_j\mid x_i)$ for the $j^{th}$ dimension, and $\mu_{j}, \sigma_{j}^{2}$ are the parameters of the prior Gaussian $p(z_j)$.
+
+Additionally, we can simplify the ELBO objective to the following expression:
+
+$$
+\mathcal{L}(x, \theta, \phi) = -\mathrm{KL}\left(q_{\theta}(z \mid x) \| p(z) \right) + \frac{1}{N} \sum_{i=1}^{N} \mathbb{E}_{q_{\theta}(z \mid x_i)} \left[ \log p_{\phi}(x_i \mid z) \right]
+$$
+
+This is equivalent to the previous expression, but highlights the two components of the objective: the KL divergence term, which encourages the approximate posterior $q_{\theta}(z \mid x)$ to be close to the prior $p(z)$, and the reconstruction term, which encourages the decoder $p_{\phi}(x \mid z)$ to generate data that is similar to the input $x$ given the latent variable $z$.
+
+\textbf{Bard:}
+
+Sure, here are the answers to your questions:
+
+**a) Draw the model's framework of VAE**
+
+\img[0.5]{VAE model framework}{VAE_Basic.png}
+
+**b) Derive the objective function e.g. the Evidence Lower Bound (ELBO) using KL divergence.**
+
+The objective function of a VAE is to maximize the Evidence Lower Bound (ELBO), which is given by:
+
+$$
+ELBO = \mathbb{E}_{q(z|x)}[\log p(x|z)] - D_{KL}(q(z|x) || p(z))
+$$
+
+where:
+
+* $q(z|x)$ is the approximate posterior distribution over the latent variables,
+* $p(x|z)$ is the likelihood function,
+* $p(z)$ is the prior distribution over the latent variables, and
+* $D_{KL}$ is the Kullback-Leibler divergence.
+
+The first term in the ELBO, $\mathbb{E}_{q(z|x)}[\log p(x|z)]$, is the expected log-likelihood of the data under the approximate posterior distribution. This term encourages the model to generate realistic data. The second term in the ELBO, $D_{KL}(q(z|x) || p(z))$, is the Kullback-Leibler divergence between the approximate posterior distribution and the prior distribution. This term encourages the model to choose latent variables that are likely under the prior distribution.
+
+**c) Derive the closed form VAE loss: Gaussian latents, based on question b). e.g. Say we choose:**
+
+$$
+p(z) \rightarrow \frac{1}{\sqrt{2 \pi \sigma_{p}^{2}}} \exp \left(-\frac{\left(x-\mu_{p}\right)^{2}}{2 \sigma_{p}^{2}}\right)
+$$
+
+and
+
+$$
+q_{\theta}\left(z \mid x_{i}\right) \rightarrow \frac{1}{\sqrt{2 \pi \sigma_{q}^{2}}} \exp \left(-\frac{\left(x-\mu_{q}\right)^{2}}{2 \sigma_{q}^{2}}\right)
+$$
+
+The closed form VAE loss for Gaussian latents is given by:
+
+$$
+L = -\frac{1}{2} \sum_{i=1}^{N} \left( \frac{(x_{i} - \mu_{p})^{2}}{\sigma_{p}^{2}} + \frac{(x_{i} - \mu_{q})^{2}}{\sigma_{q}^{2}} - \log \sigma_{p}^{2} - \log \sigma_{q}^{2} + \log 2 \pi \right)
+$$
+
+where:
+
+* $N$ is the number of data points,
+* $x_{i}$ is the $i$th data point,
+* $\mu_{p}$ is the mean of the prior distribution,
+* $\sigma_{p}$ is the standard deviation of the prior distribution,
+* $\mu_{q}$ is the mean of the approximate posterior distribution, and
+* $\sigma_{q}$ is the standard deviation of the approximate posterior distribution.
+
+This loss can be minimized using any standard optimization algorithm, such as stochastic gradient descent.
+
+\textbf{FREE AI:}
+
+a) The framework of VAE consists of an encoder neural network $q_{\theta}(z \mid x)$ that maps an input data point $x$ to the parameters $(\mu_z, \sigma_z^2)$ of a Gaussian distribution in the latent space $z$, and a decoder neural network $p_{\phi}(x \mid z)$ that maps a sample $z$ from the latent space to a reconstructed data point $\hat{x}$. The overall model can be represented graphically:
+
+$$
+x \overset{q_\theta(z|x)}{\rightarrow} z \overset{p_\phi(x|z)}{\rightarrow} \hat{x}
+$$
+
+b) The objective function of VAE is derived by maximizing the evidence lower bound (ELBO), which can be expressed as:
+
+$$
+\mathcal{L}_{\text{VAE}} = E_{q_\theta(z|x)}[\log p_\phi(x|z)] - D_{KL}(q_\theta(z|x)||p(z))
+$$
+
+where the first term measures the reconstruction loss and the second term is the Kullback-Leibler (KL) divergence between the approximated posterior distribution $q_\theta(z|x)$ and the prior distribution $p(z)$. To obtain a differentiable and noise-aware estimator for $z$, we apply the reparametrization trick:
+
+$$
+z = \mu_z + \sigma_z\odot \epsilon, \quad \epsilon \sim \mathcal{N}(0,1)
+$$
+
+where $\mu_z$ and $\sigma_z$ are the mean and standard deviation outputs of the encoder for $z$, respectively, and $\odot$ denotes element-wise multiplication.
+
+c) When the prior and approximate posterior distributions are both Gaussian with diagonal covariance matrices, we can rewrite the KL divergence term in the ELBO as:
+
+$$
+D_{KL}(q_\theta(z|x)||p(z)) = -\frac{1}{2} \sum_{j=1}^J \left(1 + \log(\sigma_{z_j}^2) - \mu_{z_j}^2 - \sigma_{z_j}^2 \right)
+$$
+
+where $J$ is the dimensionality of $z$. Thus, the closed-form VAE loss for a dataset of $N$ samples becomes:
+
+$$
+\mathcal{L}_{\text{VAE}} = \frac{1}{N} \sum_{i=1}^N \left(\frac{1}{2}\sum_{j=1}^J \left(1 + \log(\sigma_{z_{ij}}^2) - \mu_{z_{ij}}^2 - \sigma_{z_{ij}}^2\right) - \frac{1}{2} \sum_{j=1}^J \frac{(x_{ij} - \hat{x}_{ij})^2}{\sigma_{x_{ij}}^2}\right)
+$$
+
+where $\hat{x}_{ij}$ and $\sigma_{x_{ij}}^2$ are the mean and variance outputs of the decoder for the $j$-th feature of the $i$-th input data point, respectively.
+
+To further explain the closed-form VAE loss for a dataset of $N$ samples, the first term in the objective function is the reconstruction loss, which measures the similarity between the input data point and its reconstruction. Since the decoder outputs a Gaussian distribution, the reconstruction loss is computed as the negative log-likelihood of the input data point under the Gaussian distribution. Specifically, we assume that the reconstruction error is normally distributed with zero mean and variance $\sigma_{x_{ij}}^2$, and therefore the negative log-likelihood is given by:
+
+$$
+-\log p_\phi(x_{i}|z_{i}) = \frac{1}{2} \sum_{j=1}^J \left[\log(2\pi\sigma_{x_{ij}}^2) + \frac{(x_{ij} - \hat{x}_{ij})^2}{\sigma_{x_{ij}}^2} \right]
+$$
+
+where $x_{ij}$ and $\hat{x}_{ij}$ are the $j$-th feature of the input data point and its reconstruction, respectively.
+
+The second term in the objective function is the KL divergence between the approximated posterior distribution $q_\theta(z|x)$ and the prior distribution $p(z)$. It encourages the posterior distribution to be close to the prior distribution, which helps in avoiding overfitting and enforcing the regularization. The KL divergence term in the closed-form VAE loss can be interpreted as a regularization term that encourages the encoder to distribute the latent variable representation of each input across its dimensions and to avoid overfitting by producing latent variables with high variance.
 
 \begin{shaded}
 \question \textbf{Policy based Reinforcement Learning}
 
-Please write down the detailed derivation of the policy gradient method in the episodic case, e.g. Show that $\nabla J(\boldsymbol{\theta}) \propto \mathbb{E}_{\pi}\left[q_{\pi}(s, a) \nabla \pi(a \mid s)\right]$
+Please write down the detailed derivation of the policy gradient method in the episodic case, e.g. Show that $\nabla J(\boldsymbol{\theta}) \propto \mathbb{E}_{\pi}\left[\sum_{a} q_{\pi}(s, a) \nabla \pi(a \mid s)\right]$
 
 Some definitions you may need:
 $$
@@ -72,6 +247,6 @@ $$
 
 \textbf{SOLUTION:}
 
-\bibliographystyle{plain}
-\bibliography{citations}
+% \bibliographystyle{plain}
+% \bibliography{citations}
 \end{document}
