@@ -1,0 +1,463 @@
+%!TEX program=xelatex
+
+% 碰到Windows版本提示Fandol字体，可以在命令行中以管理员权限执行：tlmgr update -self -all
+% \documentclass[review]{cvpr}
+\documentclass[final]{cvpr}
+
+\usepackage[UTF8]{ctex}
+
+% \usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{subfigure}
+\usepackage{overpic}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\setenumerate[1]{itemsep=0pt,partopsep=0pt,parsep=\parskip,topsep=5pt}
+\setitemize[1]{itemsep=0pt,partopsep=0pt,parsep=\parskip,topsep=5pt}
+\setdescription{itemsep=0pt,partopsep=0pt,parsep=\parskip,topsep=5pt}
+
+
+\usepackage[pagebackref=true,breaklinks=true,colorlinks,bookmarks=false]{hyperref}
+
+
+% \cvprfinalcopy % *** Uncomment this line for the final submission
+
+% \def\cvprPaperID{159} % *** Enter the CVPR Paper ID here
+% \def\confYear{CVPR 2020}
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+\newcommand{\cmm}[1]{\textcolor[rgb]{0,0.6,0}{CMM: #1}}
+\newcommand{\todo}[1]{{\textcolor{red}{\bf [#1]}}}
+\newcommand{\alert}[1]{\textcolor[rgb]{.6,0,0}{#1}}
+
+\newcommand{\IT}{IT\cite{98pami/Itti}}
+\newcommand{\MZ}{MZ\cite{03ACMMM/Ma_Contrast-based}}
+\newcommand{\GB}{GB\cite{conf/nips/HarelKP06}}
+\newcommand{\SR}{SR\cite{07cvpr/hou_SpectralResidual}}
+\newcommand{\FT}{FT\cite{09cvpr/Achanta_FTSaliency}}
+\newcommand{\CA}{CA\cite{10cvpr/goferman_context}}
+\newcommand{\LC}{LC\cite{06acmmm/ZhaiS_spatiotemporal}}
+\newcommand{\AC}{AC\cite{08cvs/achanta_salient}}
+\newcommand{\HC}{HC-maps }
+\newcommand{\RC}{RC-maps }
+\newcommand{\Lab}{$L^*a^*b^*$}
+\newcommand{\mypara}[1]{\paragraph{#1.}}
+
+\graphicspath{{figures/}}
+
+% Pages are numbered in submission mode, and unnumbered in camera-ready
+% \ifcvprfinal\pagestyle{empty}\fi
+% \setcounter{page}{409}
+
+\begin{document}
+% \begin{CJK*}{GBK}{song}
+
+\renewcommand{\figref}[1]{图\ref{#1}}
+\renewcommand{\tabref}[1]{表\ref{#1}}
+\renewcommand{\equref}[1]{式\ref{#1}}
+\renewcommand{\secref}[1]{第\ref{#1}节}
+\def\abstract{\centerline{\large\bf 摘要} \vspace*{12pt} \it}
+
+%%%%%%%%% TITLE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{地统计高斯过程与神经网络的融合方法综述
+% Translate to English (shorten and modify and in a research paper style):
+% \title{A Survey of Fusion Methods of Geostatistics Gaussian Process and Neural Network
+}
+
+
+\author{李锦韬\\ %$^{*}$
+{\tt \small2201213292 lijintao@stu.pku.edu.cn}
+}
+
+\maketitle
+% \thispagestyle{empty}
+
+%%%%%%%%% ABSTRACT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+随着近年来深度学习技术的快速发展，许多研究尝试将神经网络模型引入地统计研究，然而地学领域对不确定度的衡量需求使得这一过程并不容易。
+本文在阅读大量有影响力的文献基础上，面向联合考察点参考数据属性值和空间分布的地统计任务特性，对高斯过程本身以及高斯过程和神经网络融合实现方法展开综述。
+本文详细梳理了高斯过程的基本原理和优缺点，将目前已有的融合技术路线归纳整理为三种类型，对每种类型针对性分析，
+% 并选择神经过程方法着重分析，
+最后尝试探讨地统计高斯过程研究的未来发展趋势。\\
+% Translate to English (shorten and modify and in a research paper style):
+\textbf{关键词}：地统计；高斯过程；神经网络；神经过程
+\end{abstract}
+
+% 使用\emph{}强调
+% 使用\textbf{}加粗
+% 使用\textit{}斜体
+% 使用\textsl{}伪斜体
+% 使用\uppercase{}大写
+% 使用\textsc{}小型大写
+% 使用\textsf{}无衬线字体
+% 使用\texttt{}打字机字体
+% 使用\textmd{}中等字体
+% 使用\footnote{}脚注
+% 使用\href{URL}{text}超链接
+%%%%%%%%% BODY TEXT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{引言}\label{sec:Introduction}
+地统计学（Geostatistics）是一门研究空间数据的统计学科，既考虑到样本值的大小，又重视样本空间位置及样本间的距离，弥补了经典统计学忽略空间方位的缺陷\cite{ chiles2012geostatistics,Godxia2023Spatial}。
+地统计学的研究对象通常为地质、地理、环境、气象等领域内的点参考数据（Point Referenced Data, PRD），主要任务是对点参考数据开展空间预测，其不仅关注插值的结果，还重视所插入值的不确定性\cite{matheron1963principles}，如\figref{fig:kriging-prediction-standard-error}所示。
+
+\begin{figure}[ht!]
+    \centering\begin{overpic}[width=0.87\columnwidth]{kriging-prediction-standard-error.png}
+    \end{overpic}
+    \caption{地统计：兼顾插值预测与不确定估计\cite{gisgeography_kriging_2017}
+    }\label{fig:kriging-prediction-standard-error}
+\end{figure}
+
+地统计学是高斯过程（Gaussian Processes, GP）最早应用的领域之一，其在1960年代便开始使用克里金（Kriging）方法，即高斯过程在回归任务上的实现\cite{schulz2018tutorial}。
+在实际应用中，如\figref{fig:geostatisticalworkflow}所示，地统计工作流使用基于高斯过程回归的各类克里格方法\cite{oliver2015basic,oliver2014tutorial}，开展对点参考数据的建模，以生成未采样位置的预测，并提供对应不确定性的度量值，最终辅助决策与更进深入的探索研究。
+
+\begin{figure}[ht!]
+    \centering\begin{overpic}[width=0.9\columnwidth]{geostatistical workflow.png}
+    \end{overpic}
+    \caption{地统计工作流\cite{geostatisticalworkflow}
+    }\label{fig:geostatisticalworkflow}
+\end{figure}
+
+随着2012年以来的人工智能新浪潮崛起，深度学习技术的高速发展，以神经网络模型（Neural Network, NN）为代表的相关方法在计算机视觉、自然语言处理等领域取得了巨大的成功\cite{hinton2015deep}，其可以通过大量小批次的数据迭代训练，使用梯度下降进行参数调优，以高精度逼近有标签数据集，自适应特征提取效果好、可拓展性强\cite{bengio2017deep}。
+但是神经网络通常以黑箱形式存在，缺乏对不确定性的量化能力和可解释性，并且作为一种参数量很大的模型，在普遍具有异质性的地学数据上迁移和泛化效果不佳，这两方面使得神经网络模型在地统计领域的应用受到限制\cite{dramsch202070}。
+
+高斯过程和神经网络各自具有优势，倘若能将两者结合起来，可为地统计领域带来新方法的机遇和新思路的拓展。
+
+\section{高斯过程}\label{sec:GP}
+高斯过程的相关研究最早可以追溯到统计学中的正态随机过程概念，是指由定义在时间或空间上的一组随机变量组成的随机过程，其中任意有限个随机变量的联合分布满足多元高斯分布\cite{su2020gp}。
+
+在机器学习语境下，高斯过程实际上代表着基于正态随机过程、核方法和贝叶斯推断发展起来的机器学习方法。
+与传统监督学习中的参数化方法不同，高斯过程不局限于以模型参数选择为中心的建模思路，而是直接在函数空间上假设\emph{隐函数}（Latent Function）满足先验的高斯分布，通过已知数据对隐函数的后验分布进行推断\cite{williams2006gaussian,seeger2004gaussian}，高斯过程建模的对象不是某个单一函数，而是函数的分布。
+
+高斯过程根据预测目标类型可分为高斯过程回归和高斯过程分类两类。高斯过程是一种依赖于核（Kernel）的方法，高斯过程分类的实现效果没有支持向量机（SVM）理想，因而高斯过程回归的使用更加广泛\cite{hezhikun2013overview}。文献中的高斯过程也往往就是指代高斯过程回归，且地统计任务为回归问题。
+
+\begin{figure}[h!]
+\centering\begin{overpic}[width=\columnwidth]{regression-and-GP.png}
+\end{overpic}
+\caption{高斯过程与回归方法不同：传统回归方法只能给出确定的预测值（图上深紫色线条），而高斯过程是一个概率模型，推断的是相应的分布（图上浅紫色阴影区），在给出预测均值同时估计预测值的不确定度\cite{gortler2019visual}。
+}\label{fig:regression-and-GP}
+\end{figure} 
+
+\subsection{\textbf{高斯过程基本原理}}
+
+从函数空间（Function Space）的视角出发，高斯过程对函数分布建模，并直接在函数空间上进行贝叶斯推理。下面给出高斯过程（回归）的基本原理和关键步骤。
+
+% Gaussian process is a distribution over functions, which is defined by a mean function and a covariance function. The mean function is usually set to zero. The covariance function is also called kernel function, which is used to measure the similarity between two input points. The kernel function is usually set to a Gaussian kernel function. The Gaussian process is a prior distribution over functions, and the posterior distribution over functions can be obtained by conditioning the Gaussian process on the observed data. The posterior distribution over functions is also a Gaussian process, which is used to predict the output of new input points.
+
+
+\mypara{回归任务定义}
+% \mypara{Regression Task Definition}
+假设有训练集$\mathcal{D}=\{(\boldsymbol{x}_i,y_i)\}_{i=1}^n=(X, \boldsymbol{y})$，其中$\boldsymbol{x}_i\in \mathcal{X}$是输入向量，构成输入矩阵$X=[\boldsymbol{x_{1}}, \boldsymbol{x_{2}}, \cdots, \boldsymbol{x_{n}}]^{\top}$，$y_i\in \mathbb{R}$是对应的标签数值，$\boldsymbol{y}=[y_{1},y_{2},\cdots,y_{n}]^{\top}$。回归任务是根据训练集学习输入与输出之间的映射关系$f(\boldsymbol{x})$，使得对于任意的新测试数据$\boldsymbol{x_{*}}\in \mathcal{X}$，其回归预测值$f(\boldsymbol{x_{*}})$与真实值$y$的误差尽可能小。
+
+\mypara{高斯过程模型}
+正态随机过程是任意有限个数量的具有联合高斯分布的随机变量的集合，其性质完全由均值函数和协方差函数决定：
+\begin{equation}
+    \resizebox{0.85\hsize}{!}{$
+    \left\{\begin{array}{l} 
+        m(\boldsymbol{x})=\mathbb{E}[f(\boldsymbol{x})] \\  
+        k(\boldsymbol{x},\boldsymbol{x}')=\mathbb{E}[(f(\boldsymbol{x})-m(\boldsymbol{x}))(f(\boldsymbol{x}')-m(\boldsymbol{x}'))]
+    \end{array}\right.
+    $}
+\end{equation}
+其中，$\boldsymbol{x},\boldsymbol{x}'\in \mathcal{X}$为任意两个不同的输入向量，$m(\boldsymbol{x})$是均值函数，$k(\boldsymbol{x},\boldsymbol{x}')$是协方差函数。$f(\boldsymbol{x})$是具体形式不确定或不固定的隐函数，用来表达与$\boldsymbol{x},\boldsymbol{x'}$对应的随机变量$f(\boldsymbol{x}),f(\boldsymbol{x'})$，即所谓随机过程的截口随机变量\cite{su2020gp}。根据高斯过程定义，任意有限个隐函数$f(\boldsymbol{x})$满足联合高斯分布$f(\boldsymbol{x}) \sim \mathcal{N}(\boldsymbol{\mu},\boldsymbol{\Sigma})$。
+
+\mypara{高斯过程预测}
+高斯过程预测的核心是通过训练数据集$\mathcal{D}$对未知隐函数簇$\boldsymbol{f}$的后验分布进行推断，之后根据训练样本与测试样本之间的相似性计算出测试样本的后验隐函数分布，这种相似性在地统计中被称为空间自相关性。即相近的事物更相似，正如\emph{地理学第一定律}\cite{miller2004tobler}所概括的。
+
+为使理论推导符号更加简洁，可假设数据均值为零（或进行预处理中心化），则隐函数簇$\boldsymbol{f}$的先验分布为$\boldsymbol{f}\sim\mathcal{N}(\boldsymbol{0}, {K}({X},{X}))$，其中${K}({X},{X})$是协方差矩阵，${K}({X},{X})_{ij}=k(\boldsymbol{x_{i}},\boldsymbol{x_{j}})$。
+根据任务定义，训练样本点构成的输入矩阵${X}$对应的隐函数为$\boldsymbol{f}=[f(\boldsymbol{x_{1}}), f(\boldsymbol{x_{2}}), \cdots, f(\boldsymbol{x_{n}})]^{\top}$，测试样本点构成的输入矩阵${X_{*}}$对应的隐函数为$\boldsymbol{f_{*}}=[f(\boldsymbol{x_{*1}}), f(\boldsymbol{x_{*2}}), \cdots, f(\boldsymbol{x_{*m}})]^{\top}$。由多维高斯分布性质，$\boldsymbol{f}$和$\boldsymbol{f_{*}}$的联合先验分布为：
+\begin{equation}
+    \resizebox{0.85\hsize}{!}{$
+    \left[\begin{array}{c} 
+        \boldsymbol{f} \\  
+        \boldsymbol{f_{*}}
+    \end{array}\right] \sim \mathcal{N}\left(\boldsymbol{0}, \left[\begin{array}{cc} 
+        {K}({X},{X}) & {K}({X},{X_{*}}) \\  
+        {K}({X_{*}},{X}) & {K}({X_{*}},{X_{*}})
+    \end{array}\right]\right)
+    $}
+\end{equation}
+
+在实际的回归问题中，数据标签观测值$y$常常受到噪声污染，通常假设其也服从高斯分布，那么$y=f(\boldsymbol{x})+\epsilon$，$\epsilon\sim \mathcal{N}(0,\sigma_n^2)$，$\sigma_n^2$是噪声方差。由高斯性质，观测值向量$\boldsymbol{y}$的先验分布为：
+\begin{equation}
+    \boldsymbol{y}\sim \mathcal{N}(\boldsymbol{0},K({X},{X})+\sigma_n^2\boldsymbol{I})
+\end{equation}
+其中，协方差矩阵$K(X,X)_{ij}=k(\boldsymbol{x}_{i}, \boldsymbol{x}_{j})$，$\boldsymbol{I}$为单位矩阵。继续应用高斯分布的性质，$\boldsymbol{f}$和$\boldsymbol{f_{*}}$联合先验分布为：
+\begin{equation}
+    \resizebox{0.85\hsize}{!}{$
+    \begin{bmatrix}
+        \boldsymbol{f}\\
+        \boldsymbol{f}_*
+    \end{bmatrix}
+    \sim \mathcal{N} \left(
+    \boldsymbol{0},
+    \begin{bmatrix}
+        K({X}{X})+\sigma_n^2\boldsymbol{I} & K({X},{X}_*)\\
+        K({X}_*,\boldsymbol{X}) & K({X}_*,{X}_*)
+    \end{bmatrix}
+    \right)
+    $}
+\end{equation}
+
+最后根据高斯联合分布下的条件分布计算公式（贝叶斯理论），测试样本隐函数$\boldsymbol{f}_*$的后验分布为：
+\begin{equation}\label{eq:GP-posterior}
+    p(\boldsymbol{f}_*|{X}_*,{X},\boldsymbol{y})=\mathcal{N}(\bar{\boldsymbol{f}_*},\boldsymbol{\Sigma}_*)
+\end{equation}
+
+其中预测均值：
+\begin{equation}
+    \bar{\boldsymbol{f}_*}=K({X}_*,{X})[K({X},{X})+\sigma_n^2\boldsymbol{I}]^{-1}\boldsymbol{y}\label{eq:GP-mean}
+\end{equation}
+$\bar{\boldsymbol{f}_*}$可以被视为训练样本观测值向量$\boldsymbol{y}$的线性组合，但其权重与测试输入${X}_{*}$以及协方差结构有关。
+
+预测方差：
+\begin{equation}
+    \begin{split}
+    \boldsymbol{\Sigma}_*&=K({X}_*,{X}_*)-\\
+    &K({X}_*,{X})[K({X},{X})+\sigma_n^2\boldsymbol{I}]^{-1}K({X},{X}_*)
+    \end{split}\label{eq:GP-var}
+\end{equation}
+$\boldsymbol{\Sigma}_*$与$\boldsymbol{y}$无关，只依赖于输入  ${X}$和${X}_{*}$，意味着$\boldsymbol{f}_{*}$的方差仅和其与已观测点之间的相对位置有关，而和已观测点的函数值无关\cite{murphy2012machine}。
+
+\begin{figure}[ht!]
+    \centering\begin{overpic}[width=\columnwidth]{1dGP.jpg}
+    \end{overpic}
+    \caption{一维高斯过程的先验和后验对比：左图是高斯过程先验，图上的若干灰色的曲线代表着可能的隐函数（事实上隐函数有无穷多个），深色线表示先验均值为0。红色三角形为待测试点。右图为高斯过程后验，可见后验隐函数的分布发生了变化，相对拟合到训练数据（黑色点）上，且后验均值（深色线）通过所有训练数据点。\cite{schulz2018tutorial}
+    }\label{fig:1dGP}
+\end{figure}
+
+\subsection{\textbf{高斯过程优缺点分析}}
+高斯过程的数学定义优美，参数具有一定可解释性，是基于贝叶斯理论的核方法机器学习模型，而缺点和优点也是一体两面的。
+
+\mypara{高斯过程优点}
+高斯过程相比于其他机器学习方法，尤其是和参数化建模方法相比，具有可适应于小样本量、非参数推断灵活以及输出具有概率意义等优点\cite{su2020gp,mackay1998introduction,seeger2004gaussian,williams1995gaussian,williams2006gaussian,guibo_wang_gaussian_2019}。
+\begin{itemize}
+    \item 对不确定性与预测结果同步输出，高斯过程是对隐函数分布建模的概率模型；
+    \item 具有天然的贝叶斯正则化（或称遵循结构化风险最小化原则），高斯过程通过最大化边缘似然的方式自动确定合理的模型复杂度；
+    \item 适应于小样本高度非线性问题，高斯过程不像神经网络模型对数据量依赖严重。
+\end{itemize}
+
+\mypara{高斯过程缺点}
+高斯过程与当今火热的深度学习相比，对大规模数据集的挖掘效率较差\cite{hensman2013gaussian,alvarez2011computationally,davies_effective_2015,cutajar_broadening_2019}。
+\begin{itemize}
+    \item 高斯过程在某种意义上是理想化的，若数据本身不满足高斯分布假设，非高斯过程会更适合；
+    \item 高斯过程在推断/预测时计算量很大，具有平方或立方级别的计算复杂度；
+    \item 不同核函数的选择对结果的影响比较大，而核函数的选择依赖于先验知识。
+\end{itemize}
+
+\mypara{在大数据量地统计中的应用难点}
+高斯过程与神经网络的训练和预测不同，高斯过程是非参数模型，其参数数量是不固定的。根据公式\eqref{eq:GP-mean}和公式\eqref{eq:GP-var}所示，协方差矩阵内元素数量/参数数量与训练数据量相关。
+推断/预测时涉及\emph{大矩阵的求逆计算}，不经过优化的普通高斯过程计算复杂度为$\mathcal{O}(N^3)$，使其在地学大数据领域内的应用造成了困难。
+近年来许多研究聚焦在降低高斯过程计算复杂度上，开发出共轭梯度、降秩、矩阵稀疏计算、分区或局部计算以及近似算法等技术来加速\cite{lawrence2002fast,titsias2009variational,hensman2013gaussian,snelson2005sparse,katzfuss2021general}，使计算复杂度逼近平方级别，但鲜有在工业领域应用的案例。
+
+\begin{figure}[!h]
+    \centering\begin{overpic}[width=\columnwidth]{Geostat_image_reduced.jpg}
+    \end{overpic}
+    \caption{大数据时代下地统计数据规模迅速扩大\cite{apex_geoscience_geostatistical_nodate}
+    }\label{fig:Geostat_image_reduced}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table*}[htp!] 
+    \centering
+    \caption{高斯过程与神经网络的结合方式}\label{tab:GP-NN}
+    % \resizebox{\textwidth}{15mm}
+    {\small
+    \begin{tabular}{@{}clcl@{}}
+        \toprule
+        \textbf{分类}   & \multicolumn{1}{c}{\textbf{主要观点}} & \multicolumn{1}{c}{\textbf{第一篇文献出现时间}} & \multicolumn{1}{c}{\textbf{代表文献}}   \\ \midrule
+        Explain NN with GP   & \begin{tabular}[c]{@{}l@{}}（1）无限宽深度神经网络可以等效于高斯过程 \\（2）梯度下降训练得到的神经网络可视为核机器\end{tabular}    & 1994 & \cite{neal1996priors,lee2017deep,domingos2020every} \\ \cmidrule(l){2-4}
+        \begin{tabular}[c]{@{}c@{}}NN + GP \\ (GP Kernel Identified by NN) \end{tabular} & \begin{tabular}[c]{@{}l@{}}从神经网络的层结构或高斯过程的核函数切入： \\- 使用高斯过程作为神经网络中的一层 \\- 或视为使用神经网络构造高斯过程协方差矩阵\end{tabular}  & 2013 & \cite{damianou2013deep,wilson2016deep,tibo2022inducing} \\ \cmidrule(l){2-4}
+        NN is GP   & \begin{tabular}[c]{@{}l@{}}从元学习的视角切入： \\- 使用神经网络实现类似高斯过程效果\end{tabular}  & 2018 & \cite{garnelo2018neural,garnelo2018conditional} \\ \bottomrule
+        \end{tabular}}
+\end{table*}
+
+\section{高斯过程与神经网络的结合}\label{sec:GP-NN}
+深度学习框架下的神经网络可视为一个直接训练的函数非线性逼近器，而高斯过程提供了一个学习非线性函数的分布的概率框架，双方优势互补。
+当数据量有限时，高斯过程因本身具备概率性质且可以描述不确定性而往往成为首选，但当面对大规模海量数据时，训练神经网络比高斯过程推断更容易且更具扩展性\cite{Kaspar2018Neural}。
+因而，高斯过程和神经网络的结合是非常自然的想法。
+
+本文对这一领域内的相关文献进行了梳理，参考\cite{pu2023neural}中的归纳方式，将融合研究大致分为三种类型：
+（1）在高斯过程视角下加深对神经网络的理解，探讨神经网络的可解释性；
+（2）将神经网络与高斯过程组合，使用神经网络来学习核函数或协方差矩阵，也相当于以神经网络的预测优势来弥补高斯过程预测推断的高计算复杂度；
+（3）从元学习的理念出发，不再是用高斯过程的矩阵结构，直接使用神经网络来模拟高斯过程，此领域目前称为神经过程。
+更清晰的整理结果可见\tabref{tab:GP-NN}。
+
+\subsection{\textbf{高斯过程视角下的神经网络}}
+该领域的开山之作源自Neal等在1994年对无限宽神经网络的先验分布的研究，其首次在理论上直接推导出单隐层无限宽神经网络等效于高斯过程\cite{neal1996priors}。
+更进一步的，Williams等在1997年计算出了单隐层神经网络的解析高斯过程核，并给出了使用高斯过程先验进行回归的精确贝叶斯推断方法\cite{williams1996computing}。
+Hazan等则在2015年进一步讨论了无限宽深度神经网络的等效核构建问题，但只限于两个非线性隐藏层\cite{hazan2015steps}。
+
+最终，Lee等在2017年直接论证分析了深度的无线宽神经网络等效于高斯过程，在Neal推导出了无限宽单隐层神经网络与高斯过程之间的等价性\cite{neal1996priors}基础上，证明了“无限宽深度神经网络”与“高斯过程”之间的精确等价关系，并进一步开发了一个基于随机梯度下降算法（SGD）的高效计算管道，来计算高斯过程的协方差函数\cite{lee2017deep}，作者将此过程称为神经网络高斯过程（Neural Network as Gaussian Process, NNGP）。Matthews等在2018年也得到了和Lee等相似的结论，不同于前者使用的是SGD训练神经网络与高斯过程比较，Matthews等使用的是基于马尔可夫链蒙特卡罗采样（MCMC）有限贝叶斯神经网络与高斯过程进行比较\cite{matthews2018gaussian}。
+
+另外，Jacot等在2018年剖析了神经网络训练期间的动态特性，并认为其训练动力学可以被视为一种神经正切核机制（Neural Tangent Kernel）\cite{jacot2018neural}。Domingos等在2020年提出了比神经正切核更进一步的路径核（Path Kernel）概念，认为所有通过梯度下降学得的模型，都可以被视为一种核机器\cite{domingos2020every}。
+
+\begin{figure*}[h!]
+    \centering\begin{overpic}[width=1.5\columnwidth]{gp+nn.png}\footnotesize
+        \put(7,0){(a) DKL\cite{wilson2016deep}}
+        \put(43,0){(b) DGP\cite{havasi2018inference}}
+        \put(78,0){(c) NNGP\cite{lee2017deep}}
+    \end{overpic}
+    \caption{高斯过程和深度学习组合的三种主要范例：（a）在深度核学习 (DKL) 中，神经网的最后一层被高斯过程代替；（b）深度高斯过程（DGP）更进一步，每一层都有一个高斯过程；（c）在神经网络高斯过程（ NNGP ）中，高斯过程作为贝叶斯神经网络（BNN）序列的极限出现\cite{pu2023gausssian}。
+    }\label{fig:gp+nn}
+\end{figure*}
+
+\subsection{\textbf{神经网络与高斯过程的组合}}
+\label{sec:GP-NN:GP+NN}
+
+最早的尝试来源于2013年Damianou等对深度高斯过程（Deep Gaussian Process, DGP）的研究，提出使用多个等效于高斯过程的神经网络层堆叠形成一种新型的深度信念网络，其每个单层模型等效于 “标准高斯过程” 或 “含隐变量的高斯过程模型”，创新地采用近似变分边缘化实现了模型的推断\cite{damianou2013deep}。
+
+Wilson等在2015年提出具有可扩展性的深度核学习模型（Deep Kernel Learning, DKL），其认为高斯过程与神经网络之间最大的不同在于基函数，神经网络只有有限的基函数（参数数量固定），而高斯过程通常使用无限多个固定的基函数（例如谱分解后的特征函数），因此提出了一种“前馈神经网络（模拟非线性的特征映射函数）+无线宽神经网络（模拟高斯过程的无限个基函数）”构成的深度核学习神经网络，并给出了训练和推断的算法。该模型中的封闭形式的深度核可以直接替代标准核，核学习将高斯过程的边缘似然作为目标函数，$n$个训练点的推断和学习成本为$\mathcal{O}(n)$，每个测试点的预测成本为$\mathcal{O}(1)$\cite{wilson2016deep}。
+
+Tibo等在2022年提出归纳高斯过程网络（Inducing Gaussian Process Networks, IGPN），其在研究了DKL方法后，认为DKL模型在原始空间中选择稀疏归纳点不利于捕获特征空间中的交互，应当学习特征空间中的归纳点和深度核，将输入转换到特征空间，并在特征空间中设置归纳点，作为输入送入高斯过程，其优势在于能够同时学习特征空间中的归纳点和核参数\cite{tibo2022inducing}。
+
+\subsection{\textbf{高斯过程的神经网络实现}}
+深度神经网络擅长函数逼近，但通常针对每个新函数从头开始训练，而贝叶斯方法（如高斯过程）利用先验知识在测试时快速推断新的函数形状，但高斯过程的计算成本很高，而且很难设计出合适的先验。不同于\secref{sec:GP-NN:GP+NN}中的神经网络与高斯过程的组合模式，另一种想法是直接使用神经网络模拟高斯过程，某种程度上放弃了与高斯过程相关的数学保证，但好处是训练方便且能拓展到大型数据集上。
+
+该领域来源自DeepMind团队在2018年的开创性研究，
+其提出了条件神经过程模型（Conditional Neural Process, CNP），意为其在给定一系列观察数据时能够定义函数的条件分布。该模型采用元学习的思想实现了深度学习灵活性和概率模型不确定性的结合，模型可见\figref{fig:CNP}，实现了端到端（end-to-end）的训练。但问题在于无法为相同的背景点生成不同的函数样本，缺少考虑目标之间的相关性（协方差），即缺少不确定性建模能力。\cite{garnelo2018conditional}。
+
+\begin{figure}[h!]
+    \centering\begin{overpic}[width=\columnwidth]{CNP.png}
+    \end{overpic}
+    \caption{CNP条件神经过程的说明\cite{garnelo2018conditional}：
+    (a) $f$代表从输入数据到标签的映射（可能是固定的、或是某个随机函数的一次实现）。
+    (b) 传统监督学习模型：为每个新任务重新随机初始化参数化的函数 $g$，通过最小化近似函数$g$与$f$之间的损失，花费算力在大量数据上完成$g$对$f$的拟合。研究者可能拥有的有关 $f$ 的先验信息，但一般是通过 $g$ 的架构、损失函数或训练细节进行指定的。
+    (c) CNP模型：对观测的依赖性由神经网络进行参数化，该神经网络不受输入的排列顺序影响，之后生成每个观测值的编码（Embedding），然后将这些编码通过对称聚合器$a$聚合成$r$，最终将其嵌入作为$g$的条件。
+    }\label{fig:CNP}
+\end{figure}
+
+同年，DeepMind为了提升不确定性建模能力，在CNP基础上增加了一个类似于VAE瓶颈的隐变量$z$，其每一个随机样本都对应于随机过程的一个具体实现，见\figref{fig:NP}，这样就可以通过多个样本在解码器网络中的前向传递，生成目标处的预测分布，模型被命名为神经过程（Neural Process, NP）。此方法的问题在于单个预测输出虽然包含了不确定性（即测试点处的边缘分布），但不同点处的输出之间相互独立，无法对输出的相关性建模，这从某种程度上来说，失去了随机过程的优势\cite{garnelo2018neural,martens_neural_2018}。
+
+\begin{figure}[ht!]
+    \centering\begin{overpic}[width=\columnwidth]{NP.png}
+    \end{overpic}
+    \caption{NP神经过程\cite{martens_neural_2018}
+    }\label{fig:NP}
+\end{figure}
+
+DeepMind所提出的CNP和NP模型构成了\emph{神经过程家族}（Neural Process Family, NPF）的雏形，后续有许多研究者将神经过程模型与当前主流热门的深度学习模型结合，逐渐使成员扩充\cite{dubois2020npf,jha2022neural}。
+
+Bruinsma等在2021年提出高斯神经过程，采用函数 $KL$ 散度作为训练的代价函数，同时为解决输出相关性建模问题，引入了一个用于学习核函数的神经网络，并将其与神经过程网络的结合体称为高斯神经过程。\cite{bruinsma2021gaussian}
+Markou等在2021年提出高效的高斯神经过程回归，认为Bruinsma的高斯神经过程方法采用的CNN神经网络\cite{gordon2019convolutional}（本文作者称为为 FullConvGP）会限制输入的维度），因此提出了对原始高斯神经过程方法的改进，并将新模型称为卷积高斯神经过程（ConvGP）\cite{markou2021efficient}。
+
+DeepMind团队在之前工作的基础上，于2019年提出的注意力神经过程（Attentive Neural Process），为了实现对输出相关性建模，首次在神经过程中引入注意力机制\cite{kim2019attentive}。
+Dutordoir等在2022年提出神经扩散过程，首次将扩散模型引入神经过程\cite{dutordoir2022neural}。
+Nguyen等在2022年提出Transformer神经过程，将自注意力机制实施的更进一步，直接使用自然语言处理领域中的强力架构 Transformer来和神经过程搭配\cite{nguyen2022transformer}。
+
+Bruinsma等在2023年提出自回归条件神经过程，进一步为了提升相关性预测能力，但自回归条件神经过程并不对模型或训练过程进行任何修改，而是像 MCDropout、神经自回归密度估计器 (NADE) 等一样，改变了CNP在测试阶段的部署方式，使用概率链式法则来自回归地定义联合预测分布，而不是对每个目标点独立进行预测。\cite{bruinsma2023autoregressive}
+
+总的来说，神经过程方法融合高斯过程和神经网络的思想，具有相当好的拓展性，形成一系列神经过程家族。神经过程一定程度上实现了高斯过程所定义的函数上的分布，能够快速适应新的观测结果，并可以估计其预测中的不确定性；神经过程同时能够像神经网络一样，在训练和评估过程中计算效率很高，根据数据调整自身的先验，且在结构上具有较好的拓展性，能和最新的神经网络框架结合。神经过程更加适应当前的深度学习训练模式，但也损失了原有高斯过程中的部分数学性质。
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \begin{figure}[h!]
+%     \centering\begin{overpic}[width=\columnwidth]{MetaStochasticProcess.png}
+%     \end{overpic}
+%     \caption{元学习与监督式学习学习的比较，以及建模函数与建模随机过程的比较。神经系统在右下象限。黑色圆点是训练点，而星星点是测试点\cite{dubois2020npf}。
+%     }\label{fig:MetaStochasticProcess}
+% \end{figure}
+
+\section{讨论}\label{sec:debate}
+\mypara{地理人工智能}
+在地学领域内，部分学者将现在出现的各种地学人工智能方法概括称为GeoAI（Geospatial Artificial Intelligence）\cite{Janowicz_Gao_McKenzie_Hu_Bhaduri_2020}，并希望深度使用机器学习技术自动地挖掘地学领域内的知识，建立通用的处理框架，进而加速从数据到见解的过程。
+然而，由于地学数据来源极其广泛，数据类型和模态丰富多样，包括地理要素、关系型数据表格、栅格影像、时间序列、带有地理语义的文本等等\cite{graham2013geography}，广义上而言任何带有地理位置意义的数据都是地学所关心的\cite{lee2015geospatial}，意味着GeoAI的研究范围极其广泛，所涉及的领域极为多样。
+
+对人类而言，人脑具备面向多尺度、多模式、多任务的地理空间认知能力，能够自然地把握空间异质性、空间依赖性、空间交互性和空间聚集性\cite{liu2022note}。但是对于计算机而言，这些能力要么都是需要人工设计的，要么得想方设法从数据或知识中学习得到，这也正是GeoAI研究的难点所在。
+短时间内，地学领域内很难独立地诞生统一的人工智能框架，地学相关学科必须和其他学科一道共同研究。
+
+\mypara{数据集与评价指标}
+现阶段内，GeoAI通常表现为面向特定任务目标或数据类型的应用型机器学习模型，例如遥感影像处理常常选择使用计算机视觉领域内的模型\cite{zhang2022artificial}，其结果评价可采用与人工解译结果相对比的方式完成。
+但是，在地统计领域内的数据挖掘研究往往是案例式的（Case-by-Case），这是由点参考数据本身就是以环境指标类数据为主导致的，甚至在很多情况下就没有参考真值能够进行比对，例如PM2.5数据往往只有测站数据，缺少全局整个地理空间中的测量值，这意味着缺乏标准数据集和相应的评价指标，所使用和训练的模型的可解释性和可迁移性也相对较弱，部分仍然停留在工具化的使用层面\cite{gao2020geo}。
+
+本文所调研的文献中所使用的数据集和评价指标也是各不相同的，一方面是由于高斯过程和神经网络的结合本身是一个相当新和小众的研究领域，另一方面地学领域缺乏通用的标准数据集和评价指标，其构建仍然是一个有待于研究的问题。
+
+\mypara{融合研究的必要性}
+在处理真实地理空间中的点参考数据时，经常会发现测量值受到不确定性和误差的影响，传统方法是使用高斯过程定义一个核函数来拟合数据，并为预测结果增加不确定性。
+地学研究者通过比较不同核函数在数据集上的效果，借由恰当地结合核函数或是为其选择参数来实现先验专家知识的嵌入\cite{pretorius2020expected}。然而，在如今人类正以前所未有的速度获取着以往无法观测的数据，很多情况下我们往往无法拥有对应地统计领域的专家，或是获取先验知识的成本非常高昂。这使得从数据中自动地学习已然成为数据挖掘中的共识，
+
+深度学习神经网络因其具有自动地从海量数据中学习特征而受到青睐，但是其缺乏对不确定性的建模，这使得其在地学领域内的应用受到了限制。高斯过程是一种能够对不确定性进行建模的方法，但是其在处理大规模数据时的计算复杂度较高、拓展性差。地统计领域需要找到一种能够同时兼顾两者优点的方法。
+
+\section{总结展望}\label{sec:conclusion}
+
+对空间预测插值和不确定度衡量的需求使得地统计从一开始就与高斯过程模型展开漫长的合作，诞生出一系列优秀的克里格方法。然而，在当前数据量与日俱增和深度学习日新月异的情形下，研究者们呼唤着新方法的出现，高斯过程和神经网络的结合在笔者看来是一个非常有潜力的赛道，而神经过程是该赛道上的有力竞争者。
+
+在未来的工作中，笔者计划进一步调研和梳理高斯过程与神经网络融合的方法，尤其以神经过程为主，在不同的任务场景下测试神经过程，与条件变分自编码器（CVAE）、深度高斯过程（DGP）等方法进行比较，并希望能够多应用深度学习领域内优秀算法的先进思想到地统计学中，使地统计高斯过程的适用性和拓展性进一步增强。
+
+\section*{致谢} 
+本项目得到王选计算机研究所穆亚东教授和工学院濮国梁副教授的指导，感谢两位老师的帮助，使得本项目选择高斯过程和神经网络的交叉调研成为可能。本项目中神经过程章节所涉及的部分文献源自GeoSOT实验室研究生魏新光的推荐，在此感谢其给予的支持。最后特别感谢两位课程助教谭镇涛与沈天一，每次沟通都给予及时的解答和帮助，在笔者因为身体原因导致提交延后也给予了耐心的关心和照顾，再次感谢两位助教的善意。
+
+{\small
+\bibliographystyle{IEEEtran}
+\bibliography{Saliency}
+}
+
+\appendix
+\section{附录：高斯过程训练}\label{sec:appendixA}
+\small
+高斯过程中的协方差函数需要根据对数据的先验认识来选择，其反映了数据间的空间依赖关系（相关性），是高斯过程建模的核心。
+协方差函数需要满足对称半正定条件，与Mercer核函数条件一致\cite{shawe2004kernel}，文献中常常直接将协方差函数和核函数等同。核函数的构造与超参数优化是地统计与高斯过程领域早期的主要的内容\cite{williams2006gaussian,su2020gp,duvenaud2014automatic,cressie1999classes}。
+
+高斯过程训练主要是确定核函数中的超参数，如径向基函数中的长度尺度参数$l$和方差参数$\sigma_f^2$。
+最优化超参数的方法有很多，例如：
+\begin{itemize}
+    \item 矩量法（在地统计领域克里金插值流程中称为半变异函数法Variogram\cite{zimmerman1991comparison}）：计算所有样本点之间的距离和相关性，然后拟合一条与之最符合的曲线。
+    \item 最大似然法\cite{williams2006gaussian}：通过最大化训练数据的似然函数来确定超参数$\boldsymbol{\theta^{*}}=\mathrm{arg}\max_{\theta}\log{p(\boldsymbol{y}|X,\theta)}$。
+    \item 贝叶斯推断\cite{frigola2013bayesian}：通过最大化后验概率$p(\theta|\boldsymbol{y},X)$来确定超参数$\boldsymbol{\theta^{*}}=\mathrm{arg}\max_{\theta}p(\theta|\boldsymbol{y},X)$。
+\end{itemize}
+
+\begin{figure}[htbp!]
+    \centering\begin{overpic}[width=\columnwidth]{hyper-para.png}
+    \end{overpic}
+    \caption{不同的REF核函数超参数对推断的影响\cite{guibo_wang_gaussian_2019}
+    }\label{fig:GP-hyper-para}
+\end{figure}
+
+\section{附录：常用的核函数}\label{sec:appendixB}
+
+优秀的核函数可以最大程度上挖掘训练样本和测试样本的相似特征，使得相似输入具有相似输出\cite{david_duvenaud_kernel_nodate}，且核函数间可组合。
+
+Matérn协方差函数或称马特恩协方差函数\cite{minasny2007spatial}，形式为：
+\begin{equation}
+    \begin{split}
+        &k(\boldsymbol{x},\boldsymbol{x}')=
+    \sigma_f^2\frac{2^{1-\nu}}{\Gamma(\nu)}\\
+    &\left(\frac{\sqrt{2\nu}}{l}||\boldsymbol{x}-\boldsymbol{x}'||\right)^\nu K_\nu\left(\frac{\sqrt{2\nu}}{l}||\boldsymbol{x}-\boldsymbol{x}'||\right)
+    \end{split}
+\end{equation}
+其中$l$为长度尺度参数，$\sigma_f^2$为方差参数，$\nu$为平滑度参数，$||\boldsymbol{x}-\boldsymbol{x}'||$为欧式距离，$K_\nu$为第二类修正Bessel函数。
+
+\begin{figure}[ht!]
+    \centering\begin{overpic}[width=\columnwidth]{kernels2.png}\footnotesize
+        \put(3,0){(a)SE核函数}
+        \put(38,0){(b)PER核函数}
+        \put(75,0){(c)LIN核函数}
+    \end{overpic}
+    \caption{不同核函数构成的协方差矩阵可视化对比\cite{gortler2019visual}
+    }\label{fig:GP-kernel}
+\end{figure}
+
+平方指数核函数（SE）或称径向基函数（RBF）\cite{hendriks2018evaluating}，是最常用的核函数之一，其形式为：
+\begin{equation}
+    k(\boldsymbol{x},\boldsymbol{x}')=\sigma_f^2\exp\left(-\frac{1}{2l^2}||\boldsymbol{x}-\boldsymbol{x}'||^2\right)
+\end{equation}
+其中$l$为长度尺度参数，$\sigma_f^2$为方差参数，$||\boldsymbol{x}-\boldsymbol{x}'||^2$为欧式距离。
+
+周期核函数（PER）\cite{hendriks2018evaluating}，描述了每个观测不仅与相似的观测相关，也与更远的观测呈现周期性的相关性，其形式为：
+\begin{equation}
+    k(\boldsymbol{x},\boldsymbol{x}')=\sigma_f^2\exp\left(-\frac{2\sin^2(\pi||\boldsymbol{x}-\boldsymbol{x}'||/p)}{l^2}\right)
+\end{equation}
+其中$l$为长度尺度参数，$\sigma_f^2$为方差参数，$p$为周期参数，$||\boldsymbol{x}-\boldsymbol{x}'||$为欧式距离。
+
+线性核函数（LIN）\cite{kamperis_introduction_2021}，形式为：
+\begin{equation}
+    k(\boldsymbol{x},\boldsymbol{x}')=\sigma_b^2+\sigma_f^2\boldsymbol{x}^T\boldsymbol{x}'
+\end{equation}
+其中$\sigma_f^2$为方差参数，$\sigma_b^2$为偏置参数，$\boldsymbol{x}^T\boldsymbol{x}'$为内积。
+
+
+% \end{CJK*}
+\end{document}
